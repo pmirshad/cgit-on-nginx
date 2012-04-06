@@ -1,0 +1,65 @@
+#!/bin/bash
+
+CGIT_SCRIPT=/usr/local/bin/cgit-fastcgi
+FASTCGI_USER=www-data
+FASTCGI_GROUP=www-data
+PID_DIR=/var/run/cgit-fastcgi
+PID_FILE=/var/run/cgit-fastcgi/cgit-fastcgi.pid
+RET_VAL=0
+
+case "$1" in
+  start)
+    if [[ ! -d $PID_DIR ]]
+    then
+      mkdir $PID_DIR
+      chown $FASTCGI_USER:$FASTCGI_GROUP $PID_DIR
+      chmod 0770 $PID_DIR
+    fi
+    if [[ -r $PID_FILE ]]
+    then
+      echo "cgit-fastcgi already running with PID `cat $PID_FILE`"
+      RET_VAL=1
+    else
+      $CGIT_SCRIPT
+      RET_VAL=$?
+    fi
+  ;;
+  stop)
+    if [[ -r $PID_FILE ]]
+    then
+      kill `cat $PID_FILE`
+      rm $PID_FILE
+      RET_VAL=$?
+    else
+      echo "Could not find PID file $PID_FILE"
+      RET_VAL=1
+    fi
+  ;;
+  restart)
+    if [[ -r $PID_FILE ]]
+    then
+      kill `cat $PID_FILE`
+      rm $PID_FILE
+      RET_VAL=$?
+    else
+      echo "Could not find PID file $PID_FILE"
+    fi
+    $CGIT_SCRIPT
+    RET_VAL=$?
+  ;;
+  status)
+    if [[ -r $PID_FILE ]]
+    then
+      echo "cgit-fastcgi running with PID `cat $PID_FILE`"
+      RET_VAL=$?
+    else
+      echo "Could not find PID file $PID_FILE, cgit-fastcgi does not appear to be running"
+    fi
+  ;;
+  *)
+    echo "Usage: cgit-fastcgi {start|stop|restart|status}"
+    RET_VAL=1
+  ;;
+esac
+
+exit $RET_VAL

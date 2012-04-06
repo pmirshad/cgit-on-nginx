@@ -1,0 +1,9 @@
+#!/bin/bash
+
+FASTCGI_USER=www-data
+FASTCGI_GROUP=www-data
+SOCKET=/var/run/cgit-fastcgi/cgit-fastcgi.socket
+PIDFILE=/var/run/cgit-fastcgi/cgit-fastcgi.pid
+CGIT=/usr/local/bin/fcgiwrap
+
+/usr/bin/spawn-fcgi -s $SOCKET -P $PIDFILE -u $FASTCGI_USER -g $FASTCGI_GROUP -- $CGIT

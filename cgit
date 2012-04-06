@@ -1,0 +1,52 @@
+server {
+  listen      80;
+  server_name localhost;
+
+  access_log  /var/log/nginx/cgit-access.log;
+  error_log   /var/log/nginx/cgit-error.log;
+
+  location /git {
+    gzip off;
+    alias /usr/local/cgit/share;
+
+    # We’d like to have static files like cgit.{png,css} in the same
+    # (virtual) directory
+    try_files $uri @cgit;
+  }
+
+  location @cgit {
+    fastcgi_pass   unix:/var/run/cgit-fastcgi/cgit-fastcgi.socket;
+
+    fastcgi_param  QUERY_STRING       $query_string;
+    fastcgi_param  REQUEST_METHOD     $request_method;
+    fastcgi_param  CONTENT_TYPE       $content_type;
+    fastcgi_param  CONTENT_LENGTH     $content_length;
+
+    fastcgi_param  REQUEST_URI        $request_uri;
+    fastcgi_param  DOCUMENT_URI       $document_uri;
+    fastcgi_param  SERVER_PROTOCOL    $server_protocol;
+
+    fastcgi_param  GATEWAY_INTERFACE  CGI/1.1;
+    fastcgi_param  SERVER_SOFTWARE    nginx/$nginx_version;
+
+    fastcgi_param  REMOTE_ADDR        $remote_addr;
+    fastcgi_param  REMOTE_PORT        $remote_port;
+    fastcgi_param  SERVER_ADDR        $server_addr;
+    fastcgi_param  SERVER_PORT        $server_port;
+    fastcgi_param  SERVER_NAME        $server_name;
+
+    # Tell nginx to consider everything after /git as PATH_INFO. This way
+    # we get nice, clean URL’s
+    fastcgi_split_path_info           ^(/git)(/?.+)$;
+
+    # Unfortunately the version of fcgiwrap currently available in Debian
+    # squeeze removes the PATH_INFO variable from the CGI environment and
+    # sets a new one based on DOCUMENT_ROOT and SCRIPT_NAME, so the line
+    # below won’t work
+    #fastcgi_param  PATH_INFO         $fastcgi_path_info;
+    # Tell fcgiwrap about the binary we’d like to execute and cgit about
+    # the path we’d like to access.
+    fastcgi_param  SCRIPT_NAME        /cgit.cgi$fastcgi_path_info;
+    fastcgi_param  DOCUMENT_ROOT      /usr/local/cgit/bin;
+  }
+}
